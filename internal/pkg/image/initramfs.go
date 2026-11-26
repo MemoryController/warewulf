@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 
+	"github.com/warewulf/warewulf/internal/pkg/util"
 	"github.com/warewulf/warewulf/internal/pkg/wwlog"
 )
 
@@ -75,8 +76,20 @@ func FindInitramfsFromPattern(imageName string, version string, pattern string) 
 	return nil
 }
 
-// FindInitramfs returns the Initramfs for a given image and (kernel) version
-func FindInitramfs(imageName string, version string) *Initramfs {
+// FindInitramfs prefers an exact kernel release across all supported names
+// before falling back to the historical version-prefix search.
+func FindInitramfs(imageName, release, version string) *Initramfs {
+	if release != "" && filepath.Base(release) == release {
+		for _, pattern := range initramfsSearchPaths {
+			base := strings.TrimSuffix(pattern, "*") + release
+			for _, path := range []string{base, base + ".img"} {
+				initrd := &Initramfs{Path: path, imageName: imageName}
+				if util.IsFile(initrd.FullPath()) {
+					return initrd
+				}
+			}
+		}
+	}
 	for _, pattern := range initramfsSearchPaths {
 		initramfs := FindInitramfsFromPattern(imageName, version, pattern)
 		if initramfs != nil {

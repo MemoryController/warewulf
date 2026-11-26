@@ -139,6 +139,20 @@ func (kernel *Kernel) Version() string {
 	}
 }
 
+// Release returns the full kernel release used in boot artifact names.
+func (kernel *Kernel) Release() string {
+	name := strings.TrimSuffix(filepath.Base(kernel.Path), ".gz")
+	if name == "vmlinuz" {
+		return filepath.Base(filepath.Dir(kernel.Path))
+	}
+	for _, prefix := range []string{"vmlinuz-", "Image-"} {
+		if release, ok := strings.CutPrefix(name, prefix); ok {
+			return release
+		}
+	}
+	return ""
+}
+
 func (kernel *Kernel) IsDebug() bool {
 	return strings.Contains(kernel.Path, "+debug")
 }

@@ -16,14 +16,17 @@ var initramfsHandlerTests = []struct {
 	url         string
 	status      int
 	ip          string
+	suffix      string
 }{
-	{"find initramfs", "/initramfs/00:00:00:ff:ff:ff", 200, "10.10.10.10:9873"},
+	{"find initramfs", "/initramfs/00:00:00:ff:ff:ff", 200, "10.10.10.10:9873", ""},
+	{"explicit debug kernel", "/initramfs/00:00:00:ff:ff:fe", 200, "10.10.10.11:9873", "+debug"},
 }
 
 func Test_HandleInitramfs(t *testing.T) {
 	env := testenv.New(t)
 	defer env.RemoveAll()
 
+	const release = "6.12.0-211.34.1.el10_2.x86_64"
 	env.WriteFile("/etc/warewulf/nodes.conf", `nodeprofiles:
   default:
     image name: suse
@@ -33,10 +36,22 @@ nodes:
       default:
         hwaddr: 00:00:00:ff:ff:ff
     profiles:
-    - default`)
+    - default
+  n2:
+    profiles:
+    - default
+    network devices:
+      default:
+        hwaddr: 00:00:00:ff:ff:fe
+    kernel:
+      version: /boot/vmlinuz-`+release+"+debug.gz")
 
-	env.CreateFile("/var/lib/warewulf/chroots/suse/rootfs/boot/vmlinuz-1.1.0")
-	env.CreateFile("/var/lib/warewulf/chroots/suse/rootfs/boot/initramfs-1.1.0.img")
+	const root = "/var/lib/warewulf/chroots/suse/rootfs"
+	env.CreateFile(root + "/boot/vmlinuz-" + release + "+debug.gz")
+	for _, suffix := range []string{"", "+debug"} {
+		env.CreateFile(root + "/lib/modules/" + release + suffix + "/vmlinuz")
+		env.WriteFile(root+"/boot/initramfs-"+release+suffix+".img", release+suffix)
+	}
 
 	dbErr := LoadNodeDB()
 	assert.NoError(t, dbErr)
@@ -55,6 +70,7 @@ nodes:
 			defer func() { _ = res.Body.Close() }()
 
 			assert.Equal(t, tt.status, res.StatusCode)
+			assert.Equal(t, release+tt.suffix, w.Body.String())
 		})
 	}
 }

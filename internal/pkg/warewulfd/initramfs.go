@@ -22,7 +22,7 @@ func HandleInitramfs(w http.ResponseWriter, req *http.Request) {
 	} else {
 		if kernel_ := kernel.FromNode(&ctx.remoteNode); kernel_ != nil {
 			if kver := kernel_.Version(); kver != "" {
-				if initramfs := image.FindInitramfs(ctx.remoteNode.ImageName, kver); initramfs != nil {
+				if initramfs := image.FindInitramfs(ctx.remoteNode.ImageName, kernel_.Release(), kver); initramfs != nil {
 					stageFile = initramfs.FullPath()
 				} else {
 					wwlog.Error("No initramfs found for kernel %s in image %s", kver, ctx.remoteNode.ImageName)

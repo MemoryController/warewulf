@@ -423,9 +423,10 @@ dracut semantics, set a ``GrubMenuEntry`` tag for the node.
    The ``GrubMenuEntry`` variable may be set at the node or profile level.
 
 During boot, ``warewulfd`` will detect and dynamically serve an initramfs from a
-node's image in much the same way that it can serve a kernel from an image. This
-image is loaded by iPXE (or GRUB) which directs dracut to fetch the node's image
-during boot.
+node's image. It prefers the initramfs named for the selected kernel's full
+release, including suffixes such as ``+debug``. If no exact match exists, it
+falls back to matching the numeric kernel version. iPXE (or GRUB) loads the
+initramfs, which directs dracut to fetch the node's image during boot.
 
 The wwinit module provisions to tmpfs. By default, tmpfs is permitted to use up
 to 50% of physical memory. This size limit may be adjusted using the kernel

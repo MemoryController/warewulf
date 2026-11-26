@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	warewulfconf "github.com/warewulf/warewulf/internal/pkg/config"
 	"github.com/warewulf/warewulf/internal/pkg/testenv"
 )
@@ -21,9 +22,16 @@ func TestFindInitramfs(t *testing.T) {
 
 	tests := map[string]struct {
 		initramfs []string
+		release   string
 		ver       string
 		path      string
 	}{
+		"full debug release": {
+			initramfs: []string{"/boot/initrd.img-6.12.0-1.x86_64", "/boot/initrd.img-6.12.0-1.x86_64+debug"},
+			release:   "6.12.0-1.x86_64+debug",
+			ver:       "6.12.0-1",
+			path:      "/boot/initrd.img-6.12.0-1.x86_64+debug",
+		},
 		"ok case 1": {
 			initramfs: []string{"/boot/initramfs-1.1.1.aarch64.img"},
 			ver:       "1.1.1",
@@ -49,7 +57,14 @@ func TestFindInitramfs(t *testing.T) {
 			ver:       "6.11.0-18",
 			path:      "/boot/initrd.img-6.11.0-18-generic",
 		},
+		"exact match in later search path": {
+			initramfs: []string{"/boot/initramfs-1.1.1.x86_64+debug.img", "/boot/initrd-1.1.1.x86_64"},
+			release:   "1.1.1.x86_64",
+			ver:       "1.1.1",
+			path:      "/boot/initrd-1.1.1.x86_64",
+		},
 		"prefix match": {
+			release:   "1.1.1-custom",
 			initramfs: []string{"/boot/initrd-1.1.1.aarch64.img"},
 			ver:       "1.1",
 			path:      "/boot/initrd-1.1.1.aarch64.img",
@@ -74,11 +89,11 @@ func TestFindInitramfs(t *testing.T) {
 				env.CreateFile(filepath.Join("/var/lib/warewulf/chroots/image/rootfs", init))
 			}
 
-			initramfs := FindInitramfs("image", tt.ver)
+			initramfs := FindInitramfs("image", tt.release, tt.ver)
 			if tt.path == "" {
 				assert.Nil(t, initramfs)
 			} else {
-				assert.NotNil(t, initramfs)
+				require.NotNil(t, initramfs)
 				assert.Equal(t, tt.path, initramfs.Path)
 			}
 		})

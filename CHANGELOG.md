@@ -73,6 +73,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Prefer the initramfs matching the selected kernel's full release when regular
+  and variant kernels are installed together. #2225
+
 - The dnsmasq overlay now supplies an iPXE boot file to legacy BIOS PXE
   clients. #1336
 - The `warewulf` firewalld service now opens the default TLS port (9874), so
